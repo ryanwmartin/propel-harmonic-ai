@@ -8,6 +8,10 @@ Add the remaining pieces needed for real text generation: a tokenizer to convert
 token IDs, a KV cache for efficient autoregressive decoding, and a sampling loop that
 turns logits into generated tokens one at a time.
 
+> **Note:** This epic is codec-agnostic — it operates on logits and token IDs, not on the
+> block-wise `Θ` weights. It is unchanged by the architecture pivot except that the model
+> it drives decodes weights via the block integrator (Epic 08).
+
 ## User Stories
 1. As a user, I want to type a prompt and get a token-by-token response so I can interact with the model conversationally.
 2. As a systems engineer, I want a KV cache so each new token only requires one forward pass (not recomputing the full sequence).

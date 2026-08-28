@@ -5,20 +5,21 @@ Draft
 
 ## Goal
 A terminal REPL where a user types a message, watches tokens stream back in real time, and
-has a multi-turn conversation with Gemma 2B — all weights procedurally decoded from phasor
-patches. This is the **ChatGPT aha moment**: a working chatbot with no dense weight matrices.
+has a multi-turn conversation with Gemma 2B — all weights procedurally decoded from
+block-wise `Θ` sets (oscillator + prefix-sum). This is the **ChatGPT aha moment**: a
+working chatbot with no dense weight matrices.
 
 ## User Stories
 1. As a user, I want to type a message and see the response stream token-by-token so the interaction feels alive.
 2. As a user, I want multi-turn conversation (the model remembers prior turns) so I can have a real dialogue.
-3. As a developer, I want a startup banner showing model stats (parameters, phasor size vs. original, K profile) so the achievement is visible.
+3. As a developer, I want a startup banner showing model stats (parameters, phasor size vs. original, `block_size`/`K` profile) so the achievement is visible.
 4. As a developer, I want `/reset`, `/stats`, `/tokens`, `/quit` commands so I can inspect and control the session.
 
 ## Acceptance Criteria
 - [ ] `cargo run --bin phasor-chat -- --model model_phasor/` launches a terminal REPL.
 - [ ] User types a message, hits enter, sees tokens appear one at a time (streaming, not batch).
 - [ ] Multi-turn: the conversation history is maintained in the KV cache (or re-encoded each turn) — the model responds in context.
-- [ ] Startup banner displays: model name, total parameters, phasor disk size vs. safetensors size, per-layer K profile, tokens/sec.
+- [ ] Startup banner displays: model name, total parameters, phasor disk size vs. safetensors size, per-layer `block_size`/`K` profile, tokens/sec.
 - [ ] REPL commands: `/reset` (clear history), `/stats` (session token count, avg tokens/sec, memory usage), `/tokens` (show last N token IDs), `/quit`.
 - [ ] Graceful handling of: empty input, very long input (truncate to `max_seq_len`), Ctrl+C (clean exit with stats summary).
 - [ ] A scripted demo mode (`--demo "Tell me a joke"`) that runs a single prompt non-interactively for testing/screenshots.
@@ -41,7 +42,7 @@ patches. This is the **ChatGPT aha moment**: a working chatbot with no dense wei
   - Details: `/reset` → clear history + KV cache. `/stats` → print session stats (tokens generated, avg tok/s, peak memory via `sysinfo` or manual tracking). `/tokens` → show last 20 token IDs + decoded strings. `/quit` → print summary, exit 0.
 - [ ] Startup banner
   - Files: `crates/phasor-chat/src/banner.rs`
-  - Details: read `manifest.json` + `encoding_report.json` from the model dir. Display: model name, total params, dense size (MB), phasor size (MB), ratio, per-layer K, tile count. ASCII art optional but encouraged.
+  - Details: read `manifest.json` + `encoding_report.json` from the model dir. Display: model name, total params, dense size (MB), phasor size (MB), ratio, per-layer `block_size`/`K`, block count. ASCII art optional but encouraged.
 - [ ] Integration test: scripted conversation
   - Files: `crates/phasor-chat/tests/chat_script.rs`
   - Details: run `--demo "What is 2+2?"` with a phasor-encoded model, capture stdout, assert it contains a plausible response (e.g., the string "4" or non-empty output of >10 chars). This is the smoke test for the full pipeline.
@@ -53,12 +54,13 @@ patches. This is the **ChatGPT aha moment**: a working chatbot with no dense wei
 Running:
 ```
 $ cargo run --release --bin phasor-chat -- --model model_phasor/
-╔══════════════════════════════════════╗
-║  Phasor Inference — Gemma 2B        ║
-║  Weights: 2.1B params               ║
-║  Dense: 5,016 MB → Phasor: XXX MB  ║
-║  Every weight synthesized from Θ    ║
-╚══════════════════════════════════════╝
+╔══════════════════════════════════════════╗
+║  Phasor Inference — Gemma 2B            ║
+║  Weights: 2.1B params                   ║
+║  Dense: 5,016 MB → Phasor: XXX MB      ║
+║  Every weight synthesized from Θ        ║
+║  (block oscillator + prefix-sum)        ║
+╚══════════════════════════════════════════╝
 
 You> What is the capital of France?
 Model> The capital of France is Paris.
@@ -66,5 +68,5 @@ Model> The capital of France is Paris.
 You> /quit
 Session: 12 tokens generated, 3.2 tok/s
 ```
-A working chatbot. Every weight synthesized from wave functions. No dense matrices.
-That's the aha moment.
+A working chatbot. Every weight synthesized from per-block wave functions integrated by
+running prefix-sum. No dense matrices. That's the aha moment.

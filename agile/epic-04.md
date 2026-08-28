@@ -9,6 +9,10 @@ from a large corpus, run it through the teacher model (dense Gemma 2B), and cach
 input/output activation pairs `(X, Y)` for every target weight layer. The output is an
 on-disk activation store that Stage 1 (Epic 05) consumes.
 
+> **Note:** This pipeline is codec-agnostic — it captures teacher behavior and does not
+> depend on the block-wise derivative encoding. It is unchanged by the architecture pivot;
+> Epic 05 is where the block-wise `Θ` fitting happens.
+
 ## User Stories
 1. As a researcher, I want a streaming data loader that pulls tokenized sequences from FineWeb-Edu so I don't need to download a full dataset.
 2. As a researcher, I want activation hooks on every FFN and attention projection layer so I can capture exactly what the teacher computes at each matrix multiply.
